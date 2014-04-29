@@ -3,12 +3,12 @@
 /*
 *Information here
 
-* TODO: Change name of plugin
+* TODO:
 */
 
 include_once('class-options.php');
 
-class Instagram {
+class W4_instagram {
 
 	private static $instance;
 
