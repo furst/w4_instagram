@@ -70,7 +70,7 @@ class Options {
 						$access_token = get_option('w4_instagram_access_token');
 						echo "<script type='text/javascript'>var accessToken = '{$access_token}'</script>";
 
-						echo "<input class='query' type='text'/>";
+						echo "<input placeholder='username' class='query' type='text'/>";
 						echo "<button class='user-search'>Sök</button>";
 						echo "<div id='user-con'></div>";
 			        } else {
@@ -81,8 +81,8 @@ class Options {
 						$access_token = get_option('w4_instagram_access_token');
 						echo "<script type='text/javascript'>var accessToken = '{$access_token}'</script>";
 
-						echo "<input class='lat-query' type='text'/>";
-						echo "<input class='lng-query' type='text'/>";
+						echo "<input class='lat-query' placeholder='lat' type='text'/>";
+						echo "<input class='lng-query' placeholder='lng' type='text'/>";
 						echo "<button class='location-search'>Sök</button>";
 						echo "<div id='location-con'></div>";
 			        }
