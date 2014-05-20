@@ -69,7 +69,14 @@ class W4_instagram {
 		$access_token = get_option('w4_instagram_access_token');
 		$options = get_option('w4_instagram_hashtag_options');
 
-		$hashtags = explode(',', $options['hashtags']);
+		//test
+		$optionstest = get_option('w4_instagram_user_options');
+
+		var_dump($optionstest);
+
+		$hashtags = str_replace('#', '', $options['hashtags']);
+		$hashtags = str_replace(' ', '', $hashtags);
+		$hashtags = explode(',', $hashtags);
 
 		$hashtag = $hashtags[0];
 
@@ -90,5 +97,10 @@ class W4_instagram {
 	public function admin_js(){
     	wp_enqueue_script('admin', plugins_url( '/js/admin.js', __FILE__ ), array('jquery'));
     	wp_enqueue_script('instafeed', plugins_url( '/js/instafeed.js', __FILE__ ));
+    	wp_enqueue_script('googlemaps',	'https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&libraries=places');
+    	
+
+    	//fixa
+    	wp_enqueue_style('admin', plugins_url( '/css/admin.css', __FILE__ ));
 	}
 }

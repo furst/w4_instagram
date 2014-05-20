@@ -49,11 +49,37 @@ class Options {
     				<a href="?page=w4_instagram_options&tab=hashtag_options" class="nav-tab <?php echo $active_tab == 'hashtag_options' ? 'nav-tab-active' : ''; ?>">Hashtag Options</a>
     				<a href="?page=w4_instagram_options&tab=user_options" class="nav-tab <?php echo $active_tab == 'user_options' ? 'nav-tab-active' : ''; ?>">User Options</a>
     				<a href="?page=w4_instagram_options&tab=location_options" class="nav-tab <?php echo $active_tab == 'location_options' ? 'nav-tab-active' : ''; ?>">Location Options</a>
+    				<a href="?page=w4_instagram_options&tab=display_options" class="nav-tab <?php echo $active_tab == 'display_options' ? 'nav-tab-active' : ''; ?>">Display Options</a>
 				</h2>
 				<form method="post" action="options.php" enctype="multipart/form-data">
 					<?php
 
 					if($active_tab == 'config_options') {
+
+						$website = get_bloginfo('url');
+						$redirect_uri = get_bloginfo('url') . '/wp-admin/options-general.php?page=w4_instagram_options';
+
+						echo 
+						"
+						<h3>Instructions</h3>
+						<a class='info-toggle' href='#'>Toogle instructions</a>
+						<div class='hide'>
+							<ol>
+								<li>Create a developer account at <a target='_blank' href='http://instagram.com/developer/clients/manage/'>instagram</a></li>
+								<li>Create a new client with the options listed below</li>
+								<li>Use the information about the client to fill in the fields below, save</li>
+								<li>Click Authorize</li>
+								<li></li>
+							</ol>
+
+							<p>
+								<strong>Name:</strong> your-application-name<br>
+								<strong>Website:</strong> $website<br>
+								<strong>OAuth redirect_uri:</strong> $redirect_uri<br>
+							</p>
+						</div>
+						";
+
 			            settings_fields('config_section');
 						do_settings_sections('w4_instagram_config_options');
 						submit_button();
@@ -69,11 +95,7 @@ class Options {
 
 						$access_token = get_option('w4_instagram_access_token');
 						echo "<script type='text/javascript'>var accessToken = '{$access_token}'</script>";
-
-						echo "<input placeholder='username' class='query' type='text'/>";
-						echo "<button class='user-search'>Sök</button>";
-						echo "<div id='user-con'></div>";
-			        } else {
+			        } elseif($active_tab == 'location_options') {
 			        	settings_fields('location_section');
 						do_settings_sections('w4_instagram_location_options');
 						submit_button();
@@ -81,10 +103,12 @@ class Options {
 						$access_token = get_option('w4_instagram_access_token');
 						echo "<script type='text/javascript'>var accessToken = '{$access_token}'</script>";
 
-						echo "<input class='lat-query' placeholder='lat' type='text'/>";
-						echo "<input class='lng-query' placeholder='lng' type='text'/>";
-						echo "<button class='location-search'>Sök</button>";
-						echo "<div id='location-con'></div>";
+						echo "<input id='pac-input' class='controls' type='text' placeholder='Search place'>";
+						echo "<div id='map-canvas' style='height:500px; width:100%;'></div>";
+			        } else {
+			        	settings_fields('display_section');
+						do_settings_sections('w4_instagram_display_options');
+						submit_button();
 			        }
 
 			        ?>
@@ -130,6 +154,13 @@ class Options {
 			'w4_instagram_location_options'
 		);
 
+		add_settings_section(
+			'display_section',
+			'Display options',
+			array($this, 'display_section_cb'),
+			'w4_instagram_display_options'
+		);
+
 		add_settings_field(
 			'hashtags',
 			'Hashtags',
@@ -171,9 +202,25 @@ class Options {
 		);
 
 		add_settings_field(
+			'username',
+			'Username',
+			array($this, 'username_setting'),
+			'w4_instagram_user_options',
+			'user_section'
+		);
+
+		add_settings_field(
 			'location_id',
 			'Location ID',
 			array($this, 'location_id_setting'),
+			'w4_instagram_location_options',
+			'location_section'
+		);
+
+		add_settings_field(
+			'location_name',
+			'Location name',
+			array($this, 'location_name_setting'),
 			'w4_instagram_location_options',
 			'location_section'
 		);
@@ -197,6 +244,11 @@ class Options {
 			'location_section',
 			'w4_instagram_location_options'
 		);
+
+		register_setting(
+			'display_section',
+			'w4_instagram_display_options'
+		);
 	}
 
 	public function config_section_cb() {
@@ -209,11 +261,13 @@ class Options {
 	}
 
 	public function user_section_cb() {
-		echo "<p>Search for a username, then choose the user you want to add, click save.</p>";
 	}
 
 	public function location_section_cb() {
-		echo "<p>Search for lat and long, then choose the location you want to add, click save.</p>";
+		echo "<p>Search for a place, then click on the pin to add the place</p>";
+	}
+
+	public function display_section_cb() {
 	}
 
 	/* -------- Fields -------- */
@@ -221,18 +275,19 @@ class Options {
 	// Client ID
 	public function client_id_setting() {
 		echo "<input class='regular-text' name='w4_instagram_config_options[client_id]' type='text' value='{$this->config_options['client_id']}' />";
-		echo "<p class='description'>Provide your application client id.</p>";
+		echo "<p class='description'>Provide your application client id</p>";
 	}
 
 	// Client secret
 	public function client_secret_setting() {
 		echo "<input class='regular-text' name='w4_instagram_config_options[client_secret]' type='text' value='{$this->config_options['client_secret']}' />";
+		echo "<p class='description'>Provide your application client secret</p>";
 	}
 
 	// Hashtags
 	public function hashtags_setting() {
 		echo "<input class='regular-text' name='w4_instagram_hashtag_options[hashtags]' type='text' value='{$this->hashtag_options['hashtags']}' />";
-		echo "<p class='description'>Provide hashtags separated by commas.</p>";
+		echo "<p class='description'>Provide hashtags separated by commas</p>";
 	}
 
 	// Authorize link
@@ -277,14 +332,26 @@ class Options {
 		}
 	}
 
+	// Username
+	public function username_setting() {
+		echo "<div class='loader-field'><input class='username-setting regular-text' autocomplete='off' name='w4_instagram_user_options[username]' type='text' value='{$this->user_options['username']}' /></div>";
+		echo "<div id='user-list'></div>";
+		echo "<p class='description'>Search for a username</p>";
+	}
+
 	// User ID
 	public function user_id_setting() {
-		echo "<input class='regular-text user-id-setting' name='w4_instagram_user_options[user_id]' type='text' value='{$this->user_options['user_id']}' />";
+		echo "<input class='user-id-setting' name='w4_instagram_user_options[user_id]' type='hidden' value='{$this->user_options['user_id']}' />";
+	}
+
+	// Location name
+	public function location_name_setting() {
+		echo "<input class='regular-text location-name-setting' name='w4_instagram_location_options[location_name]' type='text' value='{$this->location_options['location_name']}' />";
 	}
 
 	// Location ID
 	public function location_id_setting() {
-		echo "<input class='regular-text location-id-setting' name='w4_instagram_location_options[location_id]' type='text' value='{$this->location_options['location_id']}' />";
+		echo "<input class='regular-text location-id-setting' name='w4_instagram_location_options[location_id]' type='hidden' value='{$this->location_options['location_id']}' />";
 	}
 }
 
