@@ -96,13 +96,13 @@ jQuery(document).ready(function() {
 
 		var LocationSearch = {
 			init: function() {
-				this.url = 'https://api.instagram.com/v1/locations/search';
-				this.distance = 300;
+				this.url = 'https://api.instagram.com/v1/media/search';
+				this.distance = 5000;
 				this.mapContainer = jQuery('#map-canvas');
 				this.loader = jQuery('<div></div>').addClass('loader');
 			},
 
-			fetch: function(lat, lng) {
+			fetch: function(lat, lng, distance) {
 				var self = this;
 
 				this.init();
@@ -114,7 +114,7 @@ jQuery(document).ready(function() {
 					data: {
 						lat: lat,
 						lng: lng,
-						distance: this.distance,
+						distance: distance,
 						access_token: accessToken
 					},
 					dataType: 'jsonp'
@@ -131,14 +131,14 @@ jQuery(document).ready(function() {
 				this.markers = Array();
 				this.circle = Array();
 
+				this.radius = 5000;
+
 				this.defaultLat = 59.313217;
 				this.defaultLng = 18.080838;
-				this.locationId = jQuery('.location-id-setting');
-				this.locationName = jQuery('.location-name-setting');
+				this.locationCoords = jQuery('.location-coords-setting');
+				this.locationDistance = jQuery('.location-distance-setting');
 
 				google.maps.event.addDomListener(window, 'load', this.fetchMap().then(function() {
-					// self.zoom();
-					// self.drag();
 
 					// Create the search box and link it to the UI element.
 	  				var input = (document.getElementById('pac-input'));
@@ -168,7 +168,7 @@ jQuery(document).ready(function() {
 						// Add circle overlay and bind to marker
 						self.circle.push(new google.maps.Circle({
 						  	map: self.map,
-						  	radius: 80,
+						  	radius: self.radius,
 						  	center: latLng,
 						  	strokeColor: '#61a8e4',
 					      	strokeOpacity: 0.9,
@@ -177,13 +177,29 @@ jQuery(document).ready(function() {
 					      	fillOpacity: 0.35,
 						}));
 
-						LocationSearch.fetch(latLng.lat(), latLng.lng()).then(function(results) {
+						LocationSearch.fetch(latLng.lat(), latLng.lng(), self.radius).then(function(results) {
 							self.pin(results);
 							jQuery('.loader').remove();
 						}, function() {
 							// fixa
 							console.log('Failed');
 						});
+
+	  					event.preventDefault();
+	  				});
+
+	  				jQuery('.save-location').on('click', function(event) {
+	  					var latLng = self.map.getCenter();
+
+	  					self.locationCoords.val(latLng.lat() + ', ' + latLng.lng());
+	  					self.locationDistance.val(self.radius);
+
+	  					event.preventDefault();
+	  				});
+
+	  				jQuery('.radius-select').on('change', function(event) {
+	  					
+	  					self.radius = parseInt(this.value);
 
 	  					event.preventDefault();
 	  				});
@@ -249,70 +265,53 @@ jQuery(document).ready(function() {
 
 				dfd.resolve();
 
-				LocationSearch.fetch(this.defaultLat, this.defaultLng).then(function(results) {
+				LocationSearch.fetch(this.defaultLat, this.defaultLng, self.radius).then(function(results) {
 					self.pin(results);
 				}, function() {
 					// fixa
 					console.log('Failed');
 				});
 
+				self.circle.push(new google.maps.Circle({
+					map: self.map,
+					radius: self.radius,
+					center: self.map.getCenter(),
+					strokeColor: '#61a8e4',
+					strokeOpacity: 0.9,
+					strokeWeight: 1,
+					fillColor: '#94c6f0',
+					fillOpacity: 0.35,
+				}));
+
 				return dfd.promise();
 			},
-
-			// drag: function() {
-			// 	var self = this;
-
-			// 	google.maps.event.addListener(this.map, 'dragend', function() {
-			// 		var latLng = self.map.getCenter();
-				    
-			// 	    LocationSearch.fetch(latLng.lat(), latLng.lng()).then(function(results) {
-			// 			self.pin(results);
-			// 			jQuery('.loader').remove();
-			// 		}, function() {
-			// 			// fixa
-			// 			console.log('Failed');
-			// 		});
-			// 	});
-			// },
-
-			// zoom: function() {
-			// 	var self = this;
-
-			// 	google.maps.event.addListener(this.map, 'zoom_changed', function() {
-			// 		var latLng = self.map.getCenter();
-				    
-			// 	    LocationSearch.fetch(latLng.lat(), latLng.lng()).then(function(results) {
-			// 			self.pin(results);
-			// 			jQuery('.loader').remove();
-			// 		}, function() {
-			// 			// fixa
-			// 			console.log('Failed');
-			// 		});
-			// 	});
-			// },
 
 			pin: function(results) {
 				var self = this;
 
 				jQuery.each(results.data, function(index, data) {
-					var latLng = new google.maps.LatLng(data.latitude, data.longitude);
+					var latLng = new google.maps.LatLng(data.location.latitude, data.location.longitude);
+
+					var contentString = '<a target="_blank" style="display:block;" href="' + data.link + '">' +
+					'<img src="' + data.images.thumbnail.url + '" alt="photo by ' + data.user.username + '">' +
+					'</a>' +
+					'Photo by @<a target="_blank" href="http://instagram.com/' + data.user.username + '">' + data.user.username + '</a>'
+					;
 
 					var infowindow = new google.maps.InfoWindow({
-	      				content: data.name
+	      				content: contentString
 	  				});
 
 					var marker = new google.maps.Marker({
 			      		position: latLng,
 			      		map: self.map,
-			      		title: data.name
+			      		title: data.location.name
 			  		});
 
 			  		self.markers.push(marker);
 
 			  		google.maps.event.addListener(marker, 'click', function() {
 	    				infowindow.open(self.map, marker);
-	    				self.locationId.val(data.id);
-	    				self.locationName.val(data.name);
 	  				});
 				});
 			},

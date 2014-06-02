@@ -137,10 +137,24 @@ class Options {
 						$access_token = get_option('w4_instagram_access_token');
 						echo "<script type='text/javascript'>var accessToken = '{$access_token}'</script>";
 
-						echo "<div class='get-locations'><a href='#'>Get locations</a></div>";
+						echo "<div class='maparea'>";
+							echo "<div id='panel'>
+						      		<input class='get-locations' type='button' value='Search photos'>
+						      		<input class='save-location' type='button' value='Save location'>
+						      		<select class='radius-select'>
+						      			<option value='' disabled='disabled' selected='selected'>Search radius</option>
+									  	<option value='5000'>5000m</option>
+									  	<option value='3000'>3000m</option>
+									  	<option value='1000'>1000m</option>
+									  	<option value='500'>500m</option>
+									  	<option value='300'>300m</option>
+									  	<option value='100'>100m</option>
+									</select>
+						    	</div>";
 
-						echo "<input id='pac-input' class='controls' type='text' placeholder='Search place'>";
-						echo "<div id='map-canvas' style='height:500px; width:100%;'></div>";
+							echo "<input id='pac-input' class='controls' type='text' placeholder='Search place'>";
+							echo "<div id='map-canvas' style='height:550px; width:100%;'></div>";
+						echo "</div>";
 			        } else {
 			        	settings_fields('display_section');
 						do_settings_sections('w4_instagram_display_options');
@@ -239,17 +253,25 @@ class Options {
 		);
 
 		add_settings_field(
-			'location_id',
-			'Location ID',
-			array($this, 'location_id_setting'),
+			'location_name',
+			'Location name',
+			array($this, 'location_name_setting'),
 			'w4_instagram_location_options',
 			'location_section'
 		);
 
 		add_settings_field(
-			'location_name',
-			'Location name',
-			array($this, 'location_name_setting'),
+			'location_coords',
+			'Location coords',
+			array($this, 'location_coords_setting'),
+			'w4_instagram_location_options',
+			'location_section'
+		);
+
+		add_settings_field(
+			'location_distance',
+			'Location distance',
+			array($this, 'location_distance_setting'),
 			'w4_instagram_location_options',
 			'location_section'
 		);
@@ -404,8 +426,13 @@ class Options {
 	}
 
 	// Location ID
-	public function location_id_setting() {
-		echo "<input class='regular-text location-id-setting' name='w4_instagram_location_options[location_id]' type='hidden' value='{$this->location_options['location_id']}' />";
+	public function location_coords_setting() {
+		echo "<input class='regular-text location-coords-setting' name='w4_instagram_location_options[coords]' type='text' value='{$this->location_options['coords']}' />";
+	}
+
+	// Location distance
+	public function location_distance_setting() {
+		echo "<input class='regular-text location-distance-setting' name='w4_instagram_location_options[distance]' type='text' value='{$this->location_options['distance']}' />";
 	}
 
 	// Template
