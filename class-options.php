@@ -3,7 +3,7 @@
 /*
 *Information here
 
-* TODO:
+* TODO: Set default options values
 */
 
 class Options {
@@ -12,6 +12,7 @@ class Options {
 	public $hashtag_options;
 	public $user_options;
 	public $location_options;
+	public $display_options;
 	public $url;
 
 	public function __construct() {
@@ -19,6 +20,7 @@ class Options {
 		$this->hashtag_options = get_option('w4_instagram_hashtag_options');
 		$this->user_options = get_option('w4_instagram_user_options');
 		$this->location_options = get_option('w4_instagram_location_options');
+		$this->display_options = get_option('w4_instagram_display_options');
 		$this->url = get_bloginfo('url') . '/wp-admin/options-general.php?page=w4_instagram_options';
 		$this->register_settings();
 	}
@@ -87,10 +89,42 @@ class Options {
 			        } elseif($active_tab == 'hashtag_options') {
 			        	settings_fields('hashtag_section');
 						do_settings_sections('w4_instagram_hashtag_options');
+						echo "
+			        		<table class='form-table permalink-structure'>
+			        			<tbody>
+			        				<tr>
+			        					<th>
+			        					<label>
+			        						Shortcode
+			        					</label>
+			        					</th>
+			        					<td>
+			        					<code>[w4_instagram hashtags=true]</code>
+			        					</td>
+			        				</tr>
+			        			</tbody>
+			        		</table>
+			        	";
 						submit_button();
 			        } elseif($active_tab == 'user_options') {
 			        	settings_fields('user_section');
 						do_settings_sections('w4_instagram_user_options');
+						echo "
+			        		<table class='form-table permalink-structure'>
+			        			<tbody>
+			        				<tr>
+			        					<th>
+			        					<label>
+			        						Shortcode
+			        					</label>
+			        					</th>
+			        					<td>
+			        					<code>[w4_instagram user=true]</code>
+			        					</td>
+			        				</tr>
+			        			</tbody>
+			        		</table>
+			        	";
 						submit_button();
 
 						$access_token = get_option('w4_instagram_access_token');
@@ -102,6 +136,8 @@ class Options {
 
 						$access_token = get_option('w4_instagram_access_token');
 						echo "<script type='text/javascript'>var accessToken = '{$access_token}'</script>";
+
+						echo "<div class='get-locations'><a href='#'>Get locations</a></div>";
 
 						echo "<input id='pac-input' class='controls' type='text' placeholder='Search place'>";
 						echo "<div id='map-canvas' style='height:500px; width:100%;'></div>";
@@ -152,13 +188,6 @@ class Options {
 			'Location options',
 			array($this, 'location_section_cb'),
 			'w4_instagram_location_options'
-		);
-
-		add_settings_section(
-			'display_section',
-			'Display options',
-			array($this, 'display_section_cb'),
-			'w4_instagram_display_options'
 		);
 
 		add_settings_field(
@@ -245,9 +274,34 @@ class Options {
 			'w4_instagram_location_options'
 		);
 
+		// Display settings
+
+		add_settings_section(
+			'display_section',
+			'Display options',
+			array($this, 'display_section_cb'),
+			'w4_instagram_display_options'
+		);
+
 		register_setting(
 			'display_section',
 			'w4_instagram_display_options'
+		);
+
+		add_settings_field(
+			'template',
+			'Template',
+			array($this, 'template_setting'),
+			'w4_instagram_display_options',
+			'display_section'
+		);
+
+		add_settings_field(
+			'count',
+			'Count',
+			array($this, 'count_setting'),
+			'w4_instagram_display_options',
+			'display_section'
 		);
 	}
 
@@ -352,6 +406,24 @@ class Options {
 	// Location ID
 	public function location_id_setting() {
 		echo "<input class='regular-text location-id-setting' name='w4_instagram_location_options[location_id]' type='hidden' value='{$this->location_options['location_id']}' />";
+	}
+
+	// Template
+	public function template_setting() {
+		$options = get_option('w4_instagram_display_options');
+     
+	    $html = '<fieldset><p><label><input type="radio" id="template_one" name="w4_instagram_display_options[template]" value="1"' . checked( 1, $options['template'], false ) . '/>Standard</label></p>';
+	     
+	    $html .= '<p><label><input type="radio" id="template_two" name="w4_instagram_display_options[template]" value="2"' . checked( 2, $options['template'], false ) . '/>Small</label></p></fieldset>';
+
+	    $html .= '<p><label><input type="radio" id="template_two" name="w4_instagram_display_options[template]" value="3"' . checked( 3, $options['template'], false ) . '/>Custom</label></p></fieldset>';
+	     
+	    echo $html;
+	}
+
+	// Count
+	public function count_setting() {
+		echo "<input class='small-text count-setting' name='w4_instagram_display_options[count]' type='number' value='{$this->display_options['count']}' />";
 	}
 }
 

@@ -97,7 +97,7 @@ jQuery(document).ready(function() {
 		var LocationSearch = {
 			init: function() {
 				this.url = 'https://api.instagram.com/v1/locations/search';
-				this.distance = 5000;
+				this.distance = 300;
 				this.mapContainer = jQuery('#map-canvas');
 				this.loader = jQuery('<div></div>').addClass('loader');
 			},
@@ -128,14 +128,17 @@ jQuery(document).ready(function() {
 
 				this.map;
 
+				this.markers = Array();
+				this.circle = Array();
+
 				this.defaultLat = 59.313217;
 				this.defaultLng = 18.080838;
 				this.locationId = jQuery('.location-id-setting');
 				this.locationName = jQuery('.location-name-setting');
 
 				google.maps.event.addDomListener(window, 'load', this.fetchMap().then(function() {
-					self.zoom();
-					self.drag();
+					// self.zoom();
+					// self.drag();
 
 					// Create the search box and link it to the UI element.
 	  				var input = (document.getElementById('pac-input'));
@@ -156,7 +159,67 @@ jQuery(document).ready(function() {
 
 	    				self.map.fitBounds(bounds);
 	  				});
+
+	  				jQuery('.get-locations').on('click', function(event) {
+	  					self.clearOverlays();
+
+	  					var latLng = self.map.getCenter();
+
+						// Add circle overlay and bind to marker
+						self.circle.push(new google.maps.Circle({
+						  	map: self.map,
+						  	radius: 80,
+						  	center: latLng,
+						  	strokeColor: '#61a8e4',
+					      	strokeOpacity: 0.9,
+					      	strokeWeight: 1,
+					      	fillColor: '#94c6f0',
+					      	fillOpacity: 0.35,
+						}));
+
+						LocationSearch.fetch(latLng.lat(), latLng.lng()).then(function(results) {
+							self.pin(results);
+							jQuery('.loader').remove();
+						}, function() {
+							// fixa
+							console.log('Failed');
+						});
+
+	  					event.preventDefault();
+	  				});
 				}));
+
+				var reticleImage = new google.maps.MarkerImage(
+    				'http://www.daftlogic.com/images/cross-hairs.gif',            // marker image
+    				new google.maps.Size(19, 19),    // marker size
+    				new google.maps.Point(0,0),      // marker origin
+    				new google.maps.Point(9, 9)
+    			);  // marker anchor point
+  				var reticleShape = {
+    				coords: [32,32,32,32],           // 1px
+    				type: 'rect'                     // rectangle
+  				};
+
+   				var reticleMarker = new google.maps.Marker({
+    				position: this.map.getCenter(),
+    				map: this.map,
+    				icon: reticleImage, 
+    				shape: reticleShape,
+    				optimized: false,
+    				zIndex: 5
+  				});
+
+   				google.maps.event.addListener(this.map, 'bounds_changed', function() {
+   					reticleMarker.setPosition(self.map.getCenter());
+   				});
+
+				// var crosshairShape = {coords:[0,0,0,0],type:'rect'};
+				// var marker = new google.maps.Marker({
+				// 	map: this.map,
+				// 	icon: 'http://www.daftlogic.com/images/cross-hairs.gif',
+				// 	shape: reticleShape
+				// });
+				// marker.bindTo('position', this.map, 'center');
 			},
 
 			fetchMap: function() {
@@ -165,10 +228,10 @@ jQuery(document).ready(function() {
 				var dfd = jQuery.Deferred();
 
 				var mapOptions = {
-					zoom: 20,
+					zoom: 12,
 				    center: new google.maps.LatLng(this.defaultLat, this.defaultLng),
 				    mapTypeId: google.maps.MapTypeId.ROADMAP,
-				    minZoom: 20,
+				    minZoom: 12,
 					maxZoom: 22,
 					zoomControl:true,
 					zoomControlOptions: {
@@ -196,37 +259,37 @@ jQuery(document).ready(function() {
 				return dfd.promise();
 			},
 
-			drag: function() {
-				var self = this;
+			// drag: function() {
+			// 	var self = this;
 
-				google.maps.event.addListener(this.map, 'dragend', function() {
-					var latLng = self.map.getCenter();
+			// 	google.maps.event.addListener(this.map, 'dragend', function() {
+			// 		var latLng = self.map.getCenter();
 				    
-				    LocationSearch.fetch(latLng.lat(), latLng.lng()).then(function(results) {
-						self.pin(results);
-						jQuery('.loader').remove();
-					}, function() {
-						// fixa
-						console.log('Failed');
-					});
-				});
-			},
+			// 	    LocationSearch.fetch(latLng.lat(), latLng.lng()).then(function(results) {
+			// 			self.pin(results);
+			// 			jQuery('.loader').remove();
+			// 		}, function() {
+			// 			// fixa
+			// 			console.log('Failed');
+			// 		});
+			// 	});
+			// },
 
-			zoom: function() {
-				var self = this;
+			// zoom: function() {
+			// 	var self = this;
 
-				google.maps.event.addListener(this.map, 'zoom_changed', function() {
-					var latLng = self.map.getCenter();
+			// 	google.maps.event.addListener(this.map, 'zoom_changed', function() {
+			// 		var latLng = self.map.getCenter();
 				    
-				    LocationSearch.fetch(latLng.lat(), latLng.lng()).then(function(results) {
-						self.pin(results);
-						jQuery('.loader').remove();
-					}, function() {
-						// fixa
-						console.log('Failed');
-					});
-				});
-			},
+			// 	    LocationSearch.fetch(latLng.lat(), latLng.lng()).then(function(results) {
+			// 			self.pin(results);
+			// 			jQuery('.loader').remove();
+			// 		}, function() {
+			// 			// fixa
+			// 			console.log('Failed');
+			// 		});
+			// 	});
+			// },
 
 			pin: function(results) {
 				var self = this;
@@ -244,12 +307,26 @@ jQuery(document).ready(function() {
 			      		title: data.name
 			  		});
 
+			  		self.markers.push(marker);
+
 			  		google.maps.event.addListener(marker, 'click', function() {
 	    				infowindow.open(self.map, marker);
 	    				self.locationId.val(data.id);
 	    				self.locationName.val(data.name);
 	  				});
 				});
+			},
+
+			clearOverlays: function() {
+			  	for (var i = 0; i < this.markers.length; i++ ) {
+			    	this.markers[i].setMap(null);
+			  	}
+			  	this.markers.length = 0;
+
+			  	for (var i = 0; i < this.circle.length; i++ ) {
+			    	this.circle[i].setMap(null);
+			  	}
+			  	this.circle.length = 0;
 			}
 		};
 
