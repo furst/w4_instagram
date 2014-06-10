@@ -1,6 +1,5 @@
 <?php
 /*
-
 @wordpress-plugin
 Plugin Name: W4 Instagram
 Plugin URI: http://andreasfurst.se
@@ -12,11 +11,15 @@ License: GPL-2.0+
 License URI: www.google.se
 */
 
-// If this file is called directly, abort
+// Om denna fil kallas direkt, avbryt
 if(!defined('WPINC')) {
 	die;
 }
 
-include_once('class-w4-instagram.php');
+include_once('class-w4instagram.php');
 
-W4_instagram::get_instance();
+// Kör plugin(singleton)
+W4Instagram::get_instance();
+
+// Körs när pluginen aktiveras
+register_activation_hook( __FILE__, array( 'Options', 'set_default_options' ) );

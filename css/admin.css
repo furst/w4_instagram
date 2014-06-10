@@ -14,6 +14,19 @@
 	top:0;
 }
 
+.w4-instagram-error {
+	color:red;
+}
+
+.w4-instagram-textarea {
+	height: 130px;
+	width: 400px;
+}
+
+.w4-instagram-not-auth {
+	color:red;
+}
+
 /* Usersection */
 
 #user-list {
@@ -84,7 +97,7 @@
 #pac-input:focus {
     border-color: #4d90fe;
     margin-left: -1px;
-    padding-left: 14px;  /* Regular padding-left + 1. */
+    padding-left: 14px;
     width: 401px;
 }
 

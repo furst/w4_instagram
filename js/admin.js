@@ -1,18 +1,15 @@
-// TODO: ändra css-klassnamn
-
 jQuery(document).ready(function() {
 
-	// --------- User search
-
-	// TODO:
-	// * Gå ner i dropdown med piltangenter?
-	// * Visa grönt eller rött vid rätt/fel username?
+	/* -------------------------------------------------------------- */
+	/* User-search
+	/* -------------------------------------------------------------- */
 
 	var UserSearch = {
 		init: function() {
 			var self = this;
 
 			this.container = jQuery('#user-list');
+			this.error = jQuery('.w4-instagram-error');
 			this.url = 'https://api.instagram.com/v1/users/search';
 			this.count = 5;
 			this.query = jQuery('.username-setting');
@@ -20,14 +17,17 @@ jQuery(document).ready(function() {
 			this.loaderField = jQuery('.loader-field');
 			this.loader = jQuery('<div></div>').addClass('loader');
 
+			// lyssna på när det skrivs
 			this.query.on('input', function() {
 				if (self.query.val().length > 3) {
+					// Hämta data från instagram vid mer än tre bokstäver
 					self.fetch(jQuery(this).val()).then(function(results) {
+						self.userId.val(results.data[0].id);
 						self.map(results);
 						self.append();
 						self.loader.remove();
 					}, function() {
-						// fixa
+						self.error.text('An error occured');
 						console.log('failed');
 					});
 				}
@@ -43,6 +43,7 @@ jQuery(document).ready(function() {
 
 			this.loaderField.append(this.loader);
 
+			// Hämta data från instagram
 			return jQuery.ajax({
 				url: this.url,
 				data: {
@@ -54,6 +55,7 @@ jQuery(document).ready(function() {
 			}).promise();
 		},
 
+		// Rensa svar från instagram
 		map: function(results) {
 			this.users = jQuery.map(results.data, function(user) {
 				return {
@@ -64,6 +66,7 @@ jQuery(document).ready(function() {
 			});
 		},
 
+		// Lägg till på DOM:en
 		append: function() {
 			var self = this;
 			this.container.empty();
@@ -90,9 +93,12 @@ jQuery(document).ready(function() {
 
 	UserSearch.init();
 
-	// --------- Location search
-
+	// Kör endast om canvas finns
 	if (jQuery('#map-canvas').length > 0) {
+
+		/* -------------------------------------------------------------- */
+		/* Location-search
+		/* -------------------------------------------------------------- */
 
 		var LocationSearch = {
 			init: function() {
@@ -102,6 +108,7 @@ jQuery(document).ready(function() {
 				this.loader = jQuery('<div></div>').addClass('loader');
 			},
 
+			// Hämta data från instagram
 			fetch: function(lat, lng, distance) {
 				var self = this;
 
@@ -122,6 +129,10 @@ jQuery(document).ready(function() {
 			},
 		};
 
+		/* -------------------------------------------------------------- */
+		/* Map
+		/* -------------------------------------------------------------- */
+
 		var Map = {
 			init: function() {
 				var self = this;
@@ -137,107 +148,24 @@ jQuery(document).ready(function() {
 				this.defaultLng = 18.080838;
 				this.locationCoords = jQuery('.location-coords-setting');
 				this.locationDistance = jQuery('.location-distance-setting');
+				this.error = jQuery('.w4-instagram-error');
 
 				google.maps.event.addDomListener(window, 'load', this.fetchMap().then(function() {
 
-					// Create the search box and link it to the UI element.
-	  				var input = (document.getElementById('pac-input'));
-	  				self.map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+					// Börja lyssna på event
+	  				self.placeSearch();
 
-	  				var searchBox = new google.maps.places.SearchBox((input));
+	  				self.getLocations();
 
-	  				// Listen for the event fired when the user selects an item from the
-	  				// pick list. Retrieve the matching places for that item.
-	  				google.maps.event.addListener(searchBox, 'places_changed', function() {
-	    				var places = searchBox.getPlaces();
+	  				self.saveLocation();
 
-	    				// For each place, get the icon, place name, and location.
-	    				var bounds = new google.maps.LatLngBounds();
-	    				for (var i = 0, place; place = places[i]; i++) {
-	      					bounds.extend(place.geometry.location);
-	    				}
-
-	    				self.map.fitBounds(bounds);
-	  				});
-
-	  				jQuery('.get-locations').on('click', function(event) {
-	  					self.clearOverlays();
-
-	  					var latLng = self.map.getCenter();
-
-						// Add circle overlay and bind to marker
-						self.circle.push(new google.maps.Circle({
-						  	map: self.map,
-						  	radius: self.radius,
-						  	center: latLng,
-						  	strokeColor: '#61a8e4',
-					      	strokeOpacity: 0.9,
-					      	strokeWeight: 1,
-					      	fillColor: '#94c6f0',
-					      	fillOpacity: 0.35,
-						}));
-
-						LocationSearch.fetch(latLng.lat(), latLng.lng(), self.radius).then(function(results) {
-							self.pin(results);
-							jQuery('.loader').remove();
-						}, function() {
-							// fixa
-							console.log('Failed');
-						});
-
-	  					event.preventDefault();
-	  				});
-
-	  				jQuery('.save-location').on('click', function(event) {
-	  					var latLng = self.map.getCenter();
-
-	  					self.locationCoords.val(latLng.lat() + ', ' + latLng.lng());
-	  					self.locationDistance.val(self.radius);
-
-	  					event.preventDefault();
-	  				});
-
-	  				jQuery('.radius-select').on('change', function(event) {
-	  					
-	  					self.radius = parseInt(this.value);
-
-	  					event.preventDefault();
-	  				});
+	  				self.selectRadius();
 				}));
 
-				var reticleImage = new google.maps.MarkerImage(
-    				'http://www.daftlogic.com/images/cross-hairs.gif',            // marker image
-    				new google.maps.Size(19, 19),    // marker size
-    				new google.maps.Point(0,0),      // marker origin
-    				new google.maps.Point(9, 9)
-    			);  // marker anchor point
-  				var reticleShape = {
-    				coords: [32,32,32,32],           // 1px
-    				type: 'rect'                     // rectangle
-  				};
-
-   				var reticleMarker = new google.maps.Marker({
-    				position: this.map.getCenter(),
-    				map: this.map,
-    				icon: reticleImage, 
-    				shape: reticleShape,
-    				optimized: false,
-    				zIndex: 5
-  				});
-
-   				google.maps.event.addListener(this.map, 'bounds_changed', function() {
-   					reticleMarker.setPosition(self.map.getCenter());
-   				});
-
-				// var crosshairShape = {coords:[0,0,0,0],type:'rect'};
-				// var marker = new google.maps.Marker({
-				// 	map: this.map,
-				// 	icon: 'http://www.daftlogic.com/images/cross-hairs.gif',
-				// 	shape: reticleShape
-				// });
-				// marker.bindTo('position', this.map, 'center');
+				self.addCrosshair();
 			},
 
+			// Hämta karta
 			fetchMap: function() {
 
 				var self = this;
@@ -265,27 +193,20 @@ jQuery(document).ready(function() {
 
 				dfd.resolve();
 
+				// När kartan är hämtad, sätt ut pinnar med data
 				LocationSearch.fetch(this.defaultLat, this.defaultLng, self.radius).then(function(results) {
 					self.pin(results);
 				}, function() {
-					// fixa
+					self.error.text('An error occured');
 					console.log('Failed');
 				});
 
-				self.circle.push(new google.maps.Circle({
-					map: self.map,
-					radius: self.radius,
-					center: self.map.getCenter(),
-					strokeColor: '#61a8e4',
-					strokeOpacity: 0.9,
-					strokeWeight: 1,
-					fillColor: '#94c6f0',
-					fillOpacity: 0.35,
-				}));
+				self.addCircle();
 
 				return dfd.promise();
 			},
 
+			// Lägg till pinne
 			pin: function(results) {
 				var self = this;
 
@@ -316,6 +237,122 @@ jQuery(document).ready(function() {
 				});
 			},
 
+			// Lägg till cirkel
+			addCircle: function() {
+				var self = this;
+
+				this.circle.push(new google.maps.Circle({
+					map: self.map,
+					radius: self.radius,
+					center: self.map.getCenter(),
+					strokeColor: '#61a8e4',
+					strokeOpacity: 0.9,
+					strokeWeight: 1,
+					fillColor: '#94c6f0',
+					fillOpacity: 0.35,
+				}));
+			},
+
+			// Sök på en plats och hämta den platsen på kartan
+			placeSearch: function() {
+				var self = this;
+
+	  			var input = (document.getElementById('pac-input'));
+	  			self.map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+
+	  			var searchBox = new google.maps.places.SearchBox((input));
+
+	  			google.maps.event.addListener(searchBox, 'places_changed', function() {
+	    			var places = searchBox.getPlaces();
+
+	    			var bounds = new google.maps.LatLngBounds();
+	    			for (var i = 0, place; place = places[i]; i++) {
+	      				bounds.extend(place.geometry.location);
+	    			}
+
+	    			self.map.fitBounds(bounds);
+	  			});
+			},
+
+			// Hämta platser från instagram beroende på kordinater
+			getLocations: function() {
+				var self = this;
+
+	  			jQuery('.get-locations').on('click', function(event) {
+	  				self.clearOverlays();
+
+	  				var latLng = self.map.getCenter();
+
+					self.addCircle();
+
+					LocationSearch.fetch(latLng.lat(), latLng.lng(), self.radius).then(function(results) {
+						self.pin(results);
+						jQuery('.loader').remove();
+					}, function() {
+						self.error.text('Ett oväntat fel inträffade');
+						console.log('Failed');
+					});
+
+	  				event.preventDefault();
+	  			});
+			},
+
+			// Lägg till kors i mitten av kartan
+			addCrosshair: function() {
+				var self = this;
+
+				var crosshair = new google.maps.MarkerImage(
+    				'../wp-content/plugins/w4_instagram/img/crosshair.png',
+    				new google.maps.Size(19, 19),
+    				new google.maps.Point(0,0),
+    				new google.maps.Point(9, 9)
+    			);
+
+  				var crosshairShape = {
+    				coords: [32,32,32,32],
+    				type: 'rect'
+  				};
+
+   				var crosshairMarker = new google.maps.Marker({
+    				position: this.map.getCenter(),
+    				map: this.map,
+    				icon: crosshair, 
+    				shape: crosshairShape,
+    				optimized: false,
+    				zIndex: 5
+  				});
+
+   				google.maps.event.addListener(this.map, 'bounds_changed', function() {
+   					crosshairMarker.setPosition(self.map.getCenter());
+   				});
+			},
+
+			// Lägg till kordinater i inputfält i wp
+			saveLocation: function() {
+				var self = this;
+
+				jQuery('.save-location').on('click', function(event) {
+	  				var latLng = self.map.getCenter();
+
+	  				self.locationCoords.val(latLng.lat() + ', ' + latLng.lng());
+	  				self.locationDistance.val(self.radius);
+
+	  				event.preventDefault();
+	  			});
+			},
+
+			// Ändra radius-sök
+			selectRadius: function() {
+				var self = this;
+
+				jQuery('.radius-select').on('change', function(event) {
+	  				self.radius = parseInt(this.value);
+
+	  				event.preventDefault();
+	  			});
+			},
+
+			// Ta bort markörer
 			clearOverlays: function() {
 			  	for (var i = 0; i < this.markers.length; i++ ) {
 			    	this.markers[i].setMap(null);
@@ -332,6 +369,7 @@ jQuery(document).ready(function() {
 		Map.init();
 	}
 
+	// Toggle instruktioner
 	jQuery('.info-toggle').on('click', function() {
 		jQuery('.hide').toggle(300);
 	});
