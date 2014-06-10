@@ -14,9 +14,12 @@ http://youtu.be/3alQNeEJReA
 
 ## Login
 Användarnamn: admin
+
 Lösenord: abc123
 
 ## Shortcodes
 [w4_instagram hashtags=true]
+
 [w4_instagram location=true]
+
 [w4_instagram user=true]
