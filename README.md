@@ -1,3 +1,5 @@
+# Wordpress Instagram plugin(DEPRECATED)
+
 ## Shortcodes
 [w4_instagram hashtags=true]
 
